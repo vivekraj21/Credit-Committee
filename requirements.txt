@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+langgraph
+langchain
+langchain-groq
+langchain-openai
+chromadb
+gradio
+python-dotenv
+pydantic
+sqlalchemy
+pandas
+tabulate
+python-multipart
+# Add any specialized Band SDK if available, otherwise using requests for API
+requests

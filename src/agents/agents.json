@@ -1,0 +1,44 @@
+{
+  "agents": [
+    {
+      "id": "financial_analyst",
+      "name": "Financial Analyst",
+      "role": "Finance",
+      "description": "Analyzes revenue, cash flow, and profitability to assess repayment capability.",
+      "llm_provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.2,
+      "prompt": "Analyze the following corporate loan application from a financial perspective. Focus on: Revenue, Cash Flow, Profitability, and Repayment Capability. \n\nApplication Data:\n{application_data}\n\nOutput format (JSON):\n{{\n    \"health_score\": 0-10,\n    \"repayment_assessment\": \"High/Medium/Low\",\n    \"findings\": \"Detailed text content\",\n    \"recommendation\": \"APPROVE/REJECT/CAUTION\"\n}}"
+    },
+    {
+      "id": "risk_officer",
+      "name": "Credit Risk Officer",
+      "role": "Risk",
+      "description": "Analyzes debt ratios, credit scores, and existing obligations.",
+      "llm_provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.2,
+      "prompt": "Analyze the following corporate loan application for Credit Risk. Focus on: Debt Ratio, Credit Score, and Overall Risk Level.\n\nApplication Data:\n{application_data}\n\nOutput format (JSON):\n{{\n    \"risk_score\": 0-10,\n    \"risk_level\": \"Low/Medium/High\",\n    \"findings\": \"Detailed text content\",\n    \"recommendation\": \"APPROVE/REJECT\"\n}}"
+    },
+    {
+      "id": "compliance_officer",
+      "name": "Compliance Officer",
+      "role": "Compliance",
+      "description": "Uses RAG to ensure application matches lending policies and regulations.",
+      "llm_provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.1,
+      "prompt": "Analyze the following loan application against internal lending policies. Identify any compliance violations or policy exceptions needed.\n\nApplication Data:\n{application_data}\n\nOutput format (JSON):\n{{\n    \"compliance_status\": \"Pass/Fail/Exception\",\n    \"policy_citations\": [\"Policy X\", \"Rule Y\"],\n    \"findings\": \"Detailed text content\",\n    \"recommendation\": \"APPROVE/REJECT\"\n}}"
+    },
+    {
+      "id": "chairman",
+      "name": "Committee Chairman",
+      "role": "Chairman",
+      "description": "Moderates the committee, detects conflicts, and drives consensus.",
+      "llm_provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.5,
+      "prompt": "You are the Chairman of the Corporate Credit Committee. Given the following findings and detected conflicts, provide instructions to the board to resolve the issues.\n\nFindings: {findings}\nConflicts: {conflicts}\n\nSummarize the situation and ask specific follow-up questions to relevant members."
+    }
+  ]
+}
