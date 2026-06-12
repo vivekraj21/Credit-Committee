@@ -14,3 +14,7 @@ tabulate
 python-multipart
 # Add any specialized Band SDK if available, otherwise using requests for API
 requests
+langchain-community
+tavily-python
+langchain-tavily
+pypdf

@@ -22,7 +22,9 @@ class AgentRegistry:
         try:
             with open(self.config_path, 'r') as f:
                 data = json.load(f)
-                for agent_cfg in data.get("agents", []):
+                # handle if data is list (new format) or dict with "agents" key
+                agents_list = data if isinstance(data, list) else data.get("agents", [])
+                for agent_cfg in agents_list:
                     self._agent_configs[agent_cfg["id"]] = agent_cfg
         except Exception as e:
             print(f"Error loading agent configs: {e}")

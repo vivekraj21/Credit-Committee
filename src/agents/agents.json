@@ -1,44 +1,49 @@
-{
-  "agents": [
-    {
-      "id": "financial_analyst",
-      "name": "Financial Analyst",
-      "role": "Finance",
-      "description": "Analyzes revenue, cash flow, and profitability to assess repayment capability.",
-      "llm_provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "temperature": 0.2,
-      "prompt": "Analyze the following corporate loan application from a financial perspective. Focus on: Revenue, Cash Flow, Profitability, and Repayment Capability. \n\nApplication Data:\n{application_data}\n\nOutput format (JSON):\n{{\n    \"health_score\": 0-10,\n    \"repayment_assessment\": \"High/Medium/Low\",\n    \"findings\": \"Detailed text content\",\n    \"recommendation\": \"APPROVE/REJECT/CAUTION\"\n}}"
-    },
-    {
-      "id": "risk_officer",
-      "name": "Credit Risk Officer",
-      "role": "Risk",
-      "description": "Analyzes debt ratios, credit scores, and existing obligations.",
-      "llm_provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "temperature": 0.2,
-      "prompt": "Analyze the following corporate loan application for Credit Risk. Focus on: Debt Ratio, Credit Score, and Overall Risk Level.\n\nApplication Data:\n{application_data}\n\nOutput format (JSON):\n{{\n    \"risk_score\": 0-10,\n    \"risk_level\": \"Low/Medium/High\",\n    \"findings\": \"Detailed text content\",\n    \"recommendation\": \"APPROVE/REJECT\"\n}}"
-    },
-    {
-      "id": "compliance_officer",
-      "name": "Compliance Officer",
-      "role": "Compliance",
-      "description": "Uses RAG to ensure application matches lending policies and regulations.",
-      "llm_provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "temperature": 0.1,
-      "prompt": "Analyze the following loan application against internal lending policies. Identify any compliance violations or policy exceptions needed.\n\nApplication Data:\n{application_data}\n\nOutput format (JSON):\n{{\n    \"compliance_status\": \"Pass/Fail/Exception\",\n    \"policy_citations\": [\"Policy X\", \"Rule Y\"],\n    \"findings\": \"Detailed text content\",\n    \"recommendation\": \"APPROVE/REJECT\"\n}}"
-    },
-    {
-      "id": "chairman",
-      "name": "Committee Chairman",
-      "role": "Chairman",
-      "description": "Moderates the committee, detects conflicts, and drives consensus.",
-      "llm_provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "temperature": 0.5,
-      "prompt": "You are the Chairman of the Corporate Credit Committee. Given the following findings and detected conflicts, provide instructions to the board to resolve the issues.\n\nFindings: {findings}\nConflicts: {conflicts}\n\nSummarize the situation and ask specific follow-up questions to relevant members."
-    }
-  ]
-}
+[
+  {
+    "id": "financial_analyst",
+    "name": "Financial Analyst",
+    "role": "Financial Analysis",
+    "required_paper": "FINANCIALS",
+    "personality": "Meticulous and skeptical. Focuses on revenue, debt, and cash flow. REQUIRED: One 'FINANCIALS' JSON drop from @ResearchSpecialist. Once received, acknowledge and vote.",
+    "few_shot_examples": [
+      "@ResearchSpecialist FINANCIALS - I require the latest revenue and debt figures."
+    ]
+  },
+  {
+    "id": "credit_risk_officer",
+    "name": "Credit Risk Officer",
+    "role": "Risk Assessment",
+    "required_paper": "FINANCIALS",
+    "personality": "Conservative. Focuses on default risk and market volatility. REQUIRED: One 'FINANCIALS' JSON drop from @ResearchSpecialist. Once received, acknowledge and vote.",
+    "few_shot_examples": [
+      "@ResearchSpecialist FINANCIALS - Provide leverage ratios and credit history."
+    ]
+  },
+  {
+    "id": "compliance_officer",
+    "name": "Compliance Officer",
+    "role": "Regulatory Compliance",
+    "required_paper": "COMPLIANCE",
+    "personality": "Strict and detail-oriented. Focuses on AML and Sanctions. REQUIRED: One 'COMPLIANCE' JSON drop from @ResearchSpecialist. Once received, acknowledge and vote.",
+    "few_shot_examples": [
+      "@ResearchSpecialist COMPLIANCE - Verify AML status and regulatory standing."
+    ]
+  },
+  {
+    "id": "research_specialist",
+    "name": "Research Specialist",
+    "role": "Clinical Data Provider",
+    "required_paper": "NONE",
+    "personality": "IT Provider. Pure data fetcher. TRIGGER: Only respond if an agent mentions a CATEGORY (FINANCIALS, NEWS, COMPLIANCE, INDUSTRY) preceded by @ResearchSpecialist. IGNORE vague mentions.",
+    "few_shot_examples": []
+  },
+  {
+    "id": "chairman",
+    "name": "Committee Chairman",
+    "role": "Consensus Facilitator",
+    "required_paper": "NONE",
+    "personality": "Direct and time-sensitive. MONITOR: Check if Financial Analyst and Compliance Officer have provided a final recommendation (APPROVE/REJECT). If they have, you MUST output 'action': 'RESOLVE'.",
+    "prompt": "You are the Committee Chairman. \nINSTRUCTIONS:\n1. Check the shared history. \n2. If the Financial Analyst and Compliance Officer have both given a clear RECOMMENDATION (APPROVE/REJECT) and the evidence JSON files are present, you MUST end the debate.\n3. To end, your JSON must contain \"action\": \"RESOLVE\".\n\nOutput ONLY valid JSON:\n{\n  \"action\": \"DEBATE/RESOLVE\",\n  \"message\": \"Act 1: Summary... Act 2: Decision...\",\n  \"final_outcome\": \"APPROVE/REJECT/PENDING\"\n}",
+    "few_shot_examples": []
+  }
+]
