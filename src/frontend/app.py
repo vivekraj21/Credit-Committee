@@ -6,11 +6,20 @@ import time
 import sys
 import os
 
+# Set output encoding to UTF-8 to prevent unicode print errors on Windows
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
+
 # Ensure project root is in sys.path to allow absolute imports from 'src'
 # The root is the parent of the 'src' directory
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
+from dotenv import load_dotenv
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 # V7 Ultra-Compact Professional Boardroom
 from src.graph.graph import create_committee_graph
@@ -67,6 +76,15 @@ function scroll_to_bottom() {
 def format_message_v3(m, findings, current_phase):
     sender = m['sender']
     text = m['text']
+    
+    # Try parsing text as JSON in case of raw logs/structural outputs
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            text = parsed.get("findings") or parsed.get("summary") or parsed.get("message") or text
+    except:
+        pass
+        
     status = findings.get(sender, {}).get("recommendation", "PARTICIPATING")
     
     cls = "bubble-agent"
@@ -188,7 +206,8 @@ def run_committee_demo(company_name, amount):
             phase = current_state.get("current_phase", "Debate")
             
             messages = band.get_room_history(room_id)
-            msg_html = f"<div id='chat-feed'>{''.join([format_message_v3(m, {}, phase) for m in messages])}</div>"
+            findings_map = current_state.get("agent_findings", {})
+            msg_html = f"<div id='chat-feed'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
             
             # Dynamic Checklist Logic
             categories = ["FINANCIALS", "NEWS", "COMPLIANCE"]
@@ -281,10 +300,12 @@ with gr.Blocks() as demo:
     btn.click(
         run_committee_demo,
         inputs=[company, amount],
-        outputs=[room_status, live_feed, decision, executive_summary, evidence_files, room_id_state, collaboration_map, evidence_checklist]
+        outputs=[room_status, live_feed, decision, executive_summary, evidence_files, room_id_state, collaboration_map, evidence_checklist],
+        concurrency_limit=1
     )
 
 if __name__ == "__main__":
     # Gradio 6.0: Pass css/js to launch()
-    # We remove hardcoded server_port to prevent OSError if 7860 is busy
+    # Queue with max_size=1 ensures only one committee session runs at a time.
+    demo.queue(max_size=1)
     demo.launch(js=AUTO_SCROLL_JS, css=BOARDROOM_CSS)

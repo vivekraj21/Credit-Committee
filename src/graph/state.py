@@ -34,3 +34,5 @@ class CommitteeState(TypedDict):
     current_phase: str
     is_consensus_reached: bool
     needs_dynamic_recruitment: bool
+    # Live vote ledger: {"Financial Analyst": "APPROVE", "Compliance Officer": "CAUTION", ...}
+    vote_ledger: Dict[str, str]
