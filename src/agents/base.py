@@ -29,8 +29,36 @@ class BaseAgent:
         self.few_shot_examples = config.get("few_shot_examples", [])
         self.custom_prompt = config.get("prompt", "")
 
-        # Initialize Groq LLM
-        self.llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0.1)
+        # Initialize LLM: prefer GROQ if configured, otherwise fall back to OpenAI when available.
+        groq_key = os.getenv("GROQ_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
+        if groq_key:
+            try:
+                groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+                self.llm = ChatGroq(model_name=groq_model, temperature=0.1)
+                print(f"[LLM] Using GROQ provider (ChatGroq) model={groq_model}")
+            except Exception as e:
+                print(f"[LLM_ERROR] Failed to initialize ChatGroq: {e}")
+                self.llm = None
+        elif openai_key:
+            try:
+                # Lazy import for OpenAI chat model
+                try:
+                    from langchain.chat_models import ChatOpenAI
+                except Exception:
+                    # Fallback import path for some langchain distributions
+                    from langchain_openai.chat_models import ChatOpenAI
+
+                openai_model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+                self.llm = ChatOpenAI(temperature=0.1, model_name=openai_model)
+                print(f"[LLM] Using OpenAI provider (ChatOpenAI) model={openai_model}")
+            except Exception as e:
+                print(f"[LLM_ERROR] Failed to initialize ChatOpenAI: {e}")
+                self.llm = None
+        else:
+            print("[LLM] No GROQ or OpenAI API key found. LLM calls will fail until one is provided.")
+            self.llm = None
 
         # Research Tools (Only for Specialist)
         self.tools = []
@@ -135,6 +163,12 @@ Reply ONLY in this exact JSON format (do not include any other text):
         company_snippet = f"Company: {app_data.get('company_name', 'Unknown')}, Loan: ${app_data.get('requested_amount', '?')}M"
 
         prompt = self._generate_system_prompt(history, company_snippet)
+
+        # If LLM wasn't initialized (no GROQ/OPENAI keys), return a safe pending response
+        if not self.llm:
+            print(f"[LLM_MISSING] {self.name} cannot run analysis — no LLM configured.")
+            return {"recommendation": "PENDING", "findings": "LLM not configured; provide GROQ_API_KEY or OPENAI_API_KEY.", "confidence": 0.0}
+
         try:
             response = self.llm.invoke(prompt)
             return self._parse_json_response(response.content)
@@ -158,9 +192,30 @@ Reply ONLY in this exact JSON format (do not include any other text):
             print(f"[TAVILY_LOG] Searching {category} for {company}...")
             raw_results = self.tools[0].invoke(query)
             filename = f"{category.lower()}_{uuid.uuid4().hex[:4]}.json"
+
+            # Try to extract a usable URL from the Tavily results so the frontend can link to the original source.
+            def _find_first_url(obj):
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        if isinstance(v, str) and (v.startswith("http://") or v.startswith("https://")):
+                            return v
+                        res = _find_first_url(v)
+                        if res: return res
+                elif isinstance(obj, list):
+                    for it in obj:
+                        res = _find_first_url(it)
+                        if res: return res
+                return None
+
+            file_url = _find_first_url(raw_results)
+
+            file_meta = {"name": filename, "content": json.dumps(raw_results, indent=2), "type": "application/json", "category": category}
+            if file_url:
+                file_meta["url"] = file_url
+
             return {
                 "summary": f"@{requester} Structured {category} data now in Evidence sidebar as {filename}.",
-                "file_data": {"name": filename, "content": json.dumps(raw_results, indent=2), "type": "application/json"},
+                "file_data": file_meta,
                 "confidence": 1.0
             }
         except Exception as e:

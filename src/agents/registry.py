@@ -44,3 +44,11 @@ class AgentRegistry:
 
 # Global instance for the system
 registry = AgentRegistry()
+
+def reset_global_registry_instances():
+    """Utility to clear cached agent instances (used when API keys change)."""
+    try:
+        registry._instances.clear()
+        print("[REGISTRY] Cleared agent instances.")
+    except Exception as e:
+        print(f"[REGISTRY_ERROR] Failed to clear instances: {e}")

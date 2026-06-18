@@ -63,5 +63,10 @@ class BandWrapper:
         """Retrieves shared context from the Band room."""
         return self.active_rooms.get(room_id, {}).get("context", {})
 
+    def set_api_key(self, api_key: str):
+        """Update the Band API key at runtime."""
+        self.api_key = api_key
+        print(f"[BAND] API key updated at runtime.")
+
 # Global instance for the hackathon prototype
 band = BandWrapper()

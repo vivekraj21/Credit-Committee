@@ -24,6 +24,7 @@ load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 # V7 Ultra-Compact Professional Boardroom
 from src.graph.graph import create_committee_graph
 from src.collaboration.band_wrapper import band
+from src.agents.registry import registry, reset_global_registry_instances
 
 print(f"--- 🔑 RUNTIME KEY CHECK ---")
 print(f"GROQ_KEY: {str(os.getenv('GROQ_API_KEY'))[:8]}...")
@@ -63,6 +64,13 @@ h1, h2, h3, p, span, label { color: #333 !important; margin: 0 !important; }
 /* Compact Inputs */
 input, textarea { background: #f9fafb !important; border: 1px solid #e0dfdc !important; padding: 4px !important; }
 .label-style { font-size: 0.8rem !important; }
+
+/* Runtime keys accordion sizing */
+.runtime-accordion { max-height: 200px; overflow-y: auto; padding-right: 8px; }
+
+/* Reduce gap between Search Status header and checklist */
+h1 { margin: 0px 0 !important; font-size: 1rem; }
+.checklist { margin-top: 0px !important; margin-bottom: 0 !important; padding-left: 8px; }
 """
 
 # JavaScript for auto-scrolling
@@ -125,37 +133,8 @@ def parse_uploaded_files(files):
         extracted_data.append({"name": fname, "content": text})
     return extracted_data
 
-def format_mermaid_map(messages):
-    """Generates Mermaid visualizer code from room history."""
-    # Simple flow diagram showing mentions
-    nodes = set(["Chairman", "Analyst", "Risk", "Compliance", "Research"])
-    edges = []
-    for m in messages:
-        sender = m['sender'].replace(" ", "")
-        text = m['text']
-        if "@ResearchSpecialist" in text:
-            edges.append(f"{sender}-->|Request|Research")
-        if "provided the requested data" in text.lower():
-            edges.append(f"Research-->|Evidence|{sender}")
-        if "@" in text and sender != "System":
-            # Extract other mentions
-            for n in nodes:
-                if f"@{n}" in text:
-                    edges.append(f"{sender}-->|Rebuttal|{n}")
-    
-    # Unique edges
-    edges = list(set(edges))
-    mermaid_code = "graph TD\n" + "\n".join(edges if edges else ["Chairman-->Analyst", "Chairman-->Risk", "Chairman-->Compliance"])
-    
-    return f"""
-    <div class="mermaid">
-    {mermaid_code}
-    </div>
-    <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({{ startOnLoad: true }});
-    </script>
-    """
+
+
 
 def run_committee_demo(company_name, amount):
     import uuid
@@ -193,7 +172,7 @@ def run_committee_demo(company_name, amount):
         "needs_dynamic_recruitment": False
     }
     
-    yield "...", "", "WAITING", "...", gr.update(), "", "<div>Init...</div>", "<div>Checking...</div>"
+    yield "...", "", "WAITING", "...", "<div class='evidence-list'>No evidence yet.</div>", "", "<div>Checking...</div>"
     
     try:
         current_state = initial_state
@@ -224,22 +203,33 @@ def run_committee_demo(company_name, amount):
                 checklist_html += f"<div style='color: {color}'>{status} {cat}</div>"
             checklist_html += "</div>"
 
-            files = [m["metadata"]["file"]["name"] for m in messages if "file" in m.get("metadata", {})]
+            files = [m["metadata"]["file"] for m in messages if "file" in m.get("metadata", {})]
             
             outcome = current_state.get("final_decision", {})
             decision_text = outcome.get("final_outcome", "PENDING")
             summary = outcome.get("executive_summary", "Board deliberating...")
             
+            # Build a simple HTML list showing `name : url` for each uploaded file.
+            if files:
+                items = []
+                for fmeta in files:
+                    fname = fmeta.get("name")
+                    file_url = fmeta.get("url") or f"/evidence/{fname}"
+                    items.append(f"<li>{fname} : <a href='{file_url}' target='_blank'>{file_url}</a></li>")
+                evidence_html = f"<div class='evidence-list'><ul>{''.join(items)}</ul></div>"
+            else:
+                evidence_html = "<div class='evidence-list'>No evidence files uploaded.</div>"
+
             yield (
                 phase, msg_html, decision_text, summary,
-                gr.update(choices=files, value=files[-1] if files else None),
-                room_id, format_mermaid_map(messages), checklist_html
+                evidence_html,
+                room_id, checklist_html
             )
             time.sleep(0.5)
 
     except Exception as e:
         print(f"[CRITICAL_ERROR] {str(e)}")
-        yield ("Error", f"<div class='bubble-system'>Error: {str(e)}</div>", "ERROR", "Halted.", gr.update(), "", "<div>Error</div>", "<div>Halted</div>")
+        yield ("Error", f"<div class='bubble-system'>Error: {str(e)}</div>", "ERROR", "Halted.", "<div class='evidence-list'>Error</div>", "", "<div>Halted</div>")
 
 with gr.Blocks() as demo:
     with gr.Row():
@@ -257,6 +247,63 @@ with gr.Blocks() as demo:
                 company = gr.Textbox(label="Company Name", placeholder="e.g. Acme Corp", value="Veridian Dynamics")
                 amount = gr.Number(label="Loan Amount ($M)", value=150)
                 btn = gr.Button("🚀 Start Committee", variant="primary")
+                with gr.Accordion("⚙️ Runtime Keys & Provider", open=False, elem_classes="runtime-accordion"):
+                    provider = gr.Dropdown(label="LLM Provider (auto picks if blank)", choices=["auto","groq","openai"], value="auto")
+                    groq_key = gr.Textbox(label="GROQ_API_KEY", placeholder="Paste GROQ key (optional)", lines=1, visible=False)
+                    openai_key = gr.Textbox(label="OPENAI_API_KEY", placeholder="Paste OpenAI key (optional)", lines=1, visible=False)
+                    band_key = gr.Textbox(label="BAND_API_KEY", placeholder="Band API key (optional)", lines=1)
+                    tavily_key = gr.Textbox(label="TAVILY_API_KEY", placeholder="Tavily API key (optional)", lines=1)
+                    apply_keys_btn = gr.Button("Apply Keys", variant="secondary")
+                    keys_status = gr.Markdown("*Using keys from .env by default.*")
+
+                def apply_runtime_keys(provider_choice, groq_k, openai_k, band_k, tavily_k):
+                    # Apply provided keys to the environment; if blank, keep existing .env values
+                    changed = []
+                    if groq_k:
+                        os.environ["GROQ_API_KEY"] = groq_k.strip()
+                        changed.append("GROQ_API_KEY")
+                    if openai_k:
+                        os.environ["OPENAI_API_KEY"] = openai_k.strip()
+                        changed.append("OPENAI_API_KEY")
+                    if band_k:
+                        os.environ["BAND_API_KEY"] = band_k.strip()
+                        band.set_api_key(band_k.strip())
+                        changed.append("BAND_API_KEY")
+                    if tavily_k:
+                        os.environ["TAVILY_API_KEY"] = tavily_k.strip()
+                        changed.append("TAVILY_API_KEY")
+
+                    # Provider preference: allow forcing provider when chosen
+                    if provider_choice and provider_choice != "auto":
+                        os.environ["LLM_PROVIDER"] = provider_choice
+                        changed.append("LLM_PROVIDER")
+
+                    # Reset registry so agents reinitialize with new keys
+                    reset_global_registry_instances()
+
+                    msg = "Applied: " + (", ".join(changed) if changed else "(no changes, using .env)")
+                    return msg
+
+
+                apply_keys_btn.click(
+                    apply_runtime_keys,
+                    inputs=[provider, groq_key, openai_key, band_key, tavily_key],
+                    outputs=[keys_status]
+                )
+
+
+                def provider_changed(choice):
+                    # Hide/show key fields depending on chosen provider
+                    if choice == "groq":
+                        return gr.update(visible=True), gr.update(visible=False)
+                    elif choice == "openai":
+                        return gr.update(visible=False), gr.update(visible=True)
+                    else:
+                        # 'auto' -> hide both to avoid showing key fields until user selects provider
+                        return gr.update(visible=False), gr.update(visible=False)
+
+
+                provider.change(provider_changed, inputs=[provider], outputs=[groq_key, openai_key])
             
             # --- Status Check ---
             gr.Markdown("#### 📋 Search Status")
@@ -265,9 +312,6 @@ with gr.Blocks() as demo:
         with gr.Column(scale=3):
             room_status = gr.Markdown("#### 🏠 Live Boardroom Feed")
             live_feed = gr.HTML("<div id='chat-feed'><div class='bubble-system'>Enter request details to begin.</div></div>")
-            
-            with gr.Accordion("📊 Collaboration Visualizer", open=False):
-                collaboration_map = gr.HTML("<div id='mermaid-container'>Loading...</div>")
 
         with gr.Column(scale=1):
             gr.Markdown("#### ⚖️ Resolution")
@@ -276,31 +320,19 @@ with gr.Blocks() as demo:
             
             gr.Markdown("---")
             gr.Markdown("#### 📂 Evidence")
-            evidence_files = gr.Dropdown(label="Research Docs", choices=[], interactive=True)
-            file_viewer = gr.Markdown("*Select a file to view data.*")
+            # Show evidence items as a simple name : url list (no full file bodies displayed)
+            evidence_list = gr.HTML("<div class='evidence-list'>No evidence yet.</div>")
             
     # State to store room_id for the viewer
     room_id_state = gr.State("")
-
-    def view_research_file(filename, room_id):
-        if not room_id or not filename: return "No file selected."
-        history = band.get_room_history(room_id)
-        for msg in history:
-            meta = msg.get("metadata", {})
-            if "file" in meta and meta["file"]["name"] == filename:
-                return f"### {filename}\n---\n{meta['file']['content']}"
-        return "File content not found."
-
-    file_trigger = evidence_files.change(
-        view_research_file,
-        inputs=[evidence_files, room_id_state],
-        outputs=file_viewer
-    )
+    
+    # We intentionally do not expose full file contents in the UI. Evidence is displayed
+    # as a simple list in `evidence_list` (name : url). No change handlers required.
 
     btn.click(
         run_committee_demo,
         inputs=[company, amount],
-        outputs=[room_status, live_feed, decision, executive_summary, evidence_files, room_id_state, collaboration_map, evidence_checklist],
+        outputs=[room_status, live_feed, decision, executive_summary, evidence_list, room_id_state, evidence_checklist],
         concurrency_limit=1
     )
 
