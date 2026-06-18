@@ -42,8 +42,9 @@ body { background-color: #f3f2ef; font-family: -apple-system, sans-serif; margin
 # `#chat-feed` max-height kept intentionally conservative for hosted layout.
 # Adjust values as needed to taste.
 /* chat-feed: increased height by ~25% (from 300px -> 375px) for better readability */
+/* chat-feed: increased height by ~25% (from 300px -> 375px) for better readability */
 #chat-feed { 
-    height: 375px; 
+    height: 450px; 
     overflow-y: auto; 
     padding: 10px; 
     display: flex; 
@@ -116,11 +117,13 @@ def format_message_v3(m, findings, current_phase):
     
     active_cls = "active-speaker" if sender in current_phase or (current_phase == "Board Debate" and sender != "System") else ""
     
+    # Add a small separator after each message for clear visual separation.
     return f"""
-    <div class="chat-msg {active_cls}">
+    <div class=\"chat-msg {active_cls}\">
         {header_html}
-        <div class="chat-bubble {cls}">{text}</div>
+        <div class=\"chat-bubble {cls}\">{text}</div>
     </div>
+    <div class=\"msg-sep\"></div>
     """
 
 def parse_uploaded_files(files):
@@ -198,8 +201,8 @@ def run_committee_demo(company_name, amount):
             findings_map = current_state.get("agent_findings", {})
             # Ensure the chat feed is boxed and scrollable across Gradio versions by
             # including an inline max-height and overflow style on the container.
-            # Use a reduced max-height so the feed occupies roughly half the boardroom box.
-            msg_html = f"<div id='chat-feed' style='max-height:300px; overflow-y:auto;'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
+            # Increased max-height by 20% (approx) to improve readability on hosted Space.
+            msg_html = f"<div id='chat-feed' style='max-height:450px; overflow-y:auto;'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
             
             # Dynamic Checklist Logic
             categories = ["FINANCIALS", "NEWS", "COMPLIANCE"]
