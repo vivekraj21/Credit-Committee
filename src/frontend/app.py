@@ -108,9 +108,11 @@ def format_message_v3(m, findings, current_phase):
         pass
         
     status = findings.get(sender, {}).get("recommendation", "PARTICIPATING")
-    
+
     cls = "bubble-agent"
-    header_html = f"<div class='msg-header'><span>{sender}</span><span class='agent-status'>{status}</span></div>"
+    # Display the agent status in square brackets for clarity, e.g. "Financial Analyst [CAUTION]"
+    status_display = f"[{status}]"
+    header_html = f"<div class='msg-header'><span>{sender} <span class='agent-status'>{status_display}</span></span></div>"
     
     if sender == "System": 
         cls = "bubble-system"
