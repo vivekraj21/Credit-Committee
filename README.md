@@ -1,3 +1,12 @@
+---
+title: "Credit-Committee"
+emoji: "💼"
+sdk: gradio
+python_version: "3.10"
+app_file: app.py
+pinned: false
+---
+
 # 🏢 AI Corporate Credit Committee
 ### *Where AI Agents Collaborate like Executives*
 
@@ -65,30 +74,6 @@ A premium **Gradio** interface that visualizes the committee meeting as it happe
    Open `http://localhost:7860` in your browser.
 
 ---
-
-## ☁️ Deploying (Recommended): Hugging Face Spaces (Gradio)
-
-Hugging Face Spaces is an easy free option for hosting Gradio apps with a public URL and built-in secret management.
-
-Steps:
-
-1. Make the repo public on GitHub (or push to a new GitHub repo).
-2. Add a small root launcher `app.py` (already included) which imports and launches the Gradio `demo` defined in `src/frontend/app.py` and binds to `0.0.0.0` using the `PORT` env var.
-3. In Hugging Face, create a new Space and choose the `Gradio` SDK. Link to your GitHub repo or upload files directly.
-4. In the Space settings, add Secrets (do NOT commit keys):
-   - `GROQ_API_KEY` (optional)
-   - `OPENAI_API_KEY` (optional)
-   - `BAND_API_KEY` (optional)
-   - `TAVILY_API_KEY` (optional)
-   - `LLM_PROVIDER` (optional override: `groq` or `openai` or `auto`)
-
-Notes:
-- Hugging Face will use `requirements.txt` to install dependencies.
-- The root `app.py` will be run by the host and will call the `demo` object in `src/frontend/app.py`.
-- Keep secrets in the Space UI — never commit them.
-
-Alternative hosts: Replit, Railway, Fly.io — these work but have free-tier limits or require additional setup.
-
 
 ## 🏛️ Design Policy
 - **Modular Agents**: Add new specialist agents just by editing a JSON file.
