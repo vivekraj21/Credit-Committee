@@ -36,9 +36,13 @@ body { background-color: #f3f2ef; font-family: -apple-system, sans-serif; margin
 .gradio-container { background-color: #f3f2ef !important; }
 .boardroom-container { background: white; border-radius: 8px; border: 1px solid #e0dfdc; padding: 10px; margin-top: 0 !important; max-height: 600px; }
 
-/* Ultra-Compact Chat Feed */
+# Ultra-Compact Chat Feed
+# Reduce height to ~50% of the boardroom box and add visual separators
+# between messages so each agent's messages are easier to distinguish.
+# `#chat-feed` max-height kept intentionally conservative for hosted layout.
+# Adjust values as needed to taste.
 #chat-feed { 
-    height: 400px; 
+    height: 300px; 
     overflow-y: auto; 
     padding: 10px; 
     display: flex; 
@@ -50,6 +54,7 @@ body { background-color: #f3f2ef; font-family: -apple-system, sans-serif; margin
 }
 
 .chat-msg { display: flex; flex-direction: column; max-width: 95%; }
+.chat-msg + .chat-msg { border-top: 1px solid #f0f0f0; padding-top: 8px; margin-top: 8px; }
 .msg-header { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; font-size: 0.7rem; color: #666; }
 .agent-status { font-weight: 600; background: #e7f3ff; padding: 0px 6px; border-radius: 10px; color: #0077b5; font-size: 0.6rem; }
 
@@ -188,7 +193,8 @@ def run_committee_demo(company_name, amount):
             findings_map = current_state.get("agent_findings", {})
             # Ensure the chat feed is boxed and scrollable across Gradio versions by
             # including an inline max-height and overflow style on the container.
-            msg_html = f"<div id='chat-feed' style='max-height:640px; overflow-y:auto;'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
+            # Use a reduced max-height so the feed occupies roughly half the boardroom box.
+            msg_html = f"<div id='chat-feed' style='max-height:300px; overflow-y:auto;'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
             
             # Dynamic Checklist Logic
             categories = ["FINANCIALS", "NEWS", "COMPLIANCE"]
