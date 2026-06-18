@@ -69,6 +69,9 @@ body { background-color: #f3f2ef; font-family: -apple-system, sans-serif; margin
 #chat-feed .chat-msg:nth-child(odd) .chat-bubble { background: #fbfdff; }
 #chat-feed .chat-msg:nth-child(even) .chat-bubble { background: #ffffff; }
 
+/* Explicit separator element shown between messages */
+.msg-sep { height: 1px; background: #e0e0e0; margin: 6px 0; width: 100%; }
+
 h1, h2, h3, p, span, label { color: #333 !important; margin: 0 !important; }
 .active-speaker { border-left: 3px solid #0077b5; background: rgba(0, 119, 181, 0.03); }
 
