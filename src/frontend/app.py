@@ -186,7 +186,9 @@ def run_committee_demo(company_name, amount):
             
             messages = band.get_room_history(room_id)
             findings_map = current_state.get("agent_findings", {})
-            msg_html = f"<div id='chat-feed'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
+            # Ensure the chat feed is boxed and scrollable across Gradio versions by
+            # including an inline max-height and overflow style on the container.
+            msg_html = f"<div id='chat-feed' style='max-height:640px; overflow-y:auto;'>{''.join([format_message_v3(m, findings_map, phase) for m in messages])}</div>"
             
             # Dynamic Checklist Logic
             categories = ["FINANCIALS", "NEWS", "COMPLIANCE"]
