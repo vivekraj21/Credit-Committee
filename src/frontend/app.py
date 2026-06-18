@@ -41,8 +41,9 @@ body { background-color: #f3f2ef; font-family: -apple-system, sans-serif; margin
 # between messages so each agent's messages are easier to distinguish.
 # `#chat-feed` max-height kept intentionally conservative for hosted layout.
 # Adjust values as needed to taste.
+/* chat-feed: increased height by ~25% (from 300px -> 375px) for better readability */
 #chat-feed { 
-    height: 300px; 
+    height: 375px; 
     overflow-y: auto; 
     padding: 10px; 
     display: flex; 
@@ -53,15 +54,19 @@ body { background-color: #f3f2ef; font-family: -apple-system, sans-serif; margin
     border-radius: 4px;
 }
 
-.chat-msg { display: flex; flex-direction: column; max-width: 95%; }
-.chat-msg + .chat-msg { border-top: 1px solid #f0f0f0; padding-top: 8px; margin-top: 8px; }
+.chat-msg { display: flex; flex-direction: column; max-width: 95%; padding-bottom: 6px; }
+.chat-msg + .chat-msg { border-top: 1px solid #e9eef3; padding-top: 8px; margin-top: 8px; }
 .msg-header { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; font-size: 0.7rem; color: #666; }
 .agent-status { font-weight: 600; background: #e7f3ff; padding: 0px 6px; border-radius: 10px; color: #0077b5; font-size: 0.6rem; }
 
-.chat-bubble { padding: 8px 12px; border-radius: 0 8px 8px 8px; font-size: 13px; line-height: 1.4; border: 1px solid #e0dfdc; }
+.chat-bubble { padding: 8px 12px; border-radius: 0 8px 8px 8px; font-size: 13px; line-height: 1.4; border: 1px solid #e0dfdc; box-shadow: 0 1px 0 rgba(0,0,0,0.02); }
 .bubble-agent { background: #f9fafb; color: #333; align-self: flex-start; }
 .bubble-chairman { background: #0077b5; color: white; border-color: #0077b5; align-self: flex-start; }
 .bubble-system { align-self: center; background: transparent; color: #666; font-size: 11px; padding: 5px; border-top: 1px solid #e0dfdc; width: 100%; text-align: center; }
+
+/* Alternating subtle background per message to visually separate speakers */
+#chat-feed .chat-msg:nth-child(odd) .chat-bubble { background: #fbfdff; }
+#chat-feed .chat-msg:nth-child(even) .chat-bubble { background: #ffffff; }
 
 h1, h2, h3, p, span, label { color: #333 !important; margin: 0 !important; }
 .active-speaker { border-left: 3px solid #0077b5; background: rgba(0, 119, 181, 0.03); }
