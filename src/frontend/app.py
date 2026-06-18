@@ -120,13 +120,14 @@ def format_message_v3(m, findings, current_phase):
     
     active_cls = "active-speaker" if sender in current_phase or (current_phase == "Board Debate" and sender != "System") else ""
     
-    # Add a small separator after each message for clear visual separation.
+    # Add an explicit inline-styled <hr> after each message so the separator
+    # renders even if external CSS is not applied on the hosted Space.
     return f"""
     <div class=\"chat-msg {active_cls}\">
         {header_html}
         <div class=\"chat-bubble {cls}\">{text}</div>
     </div>
-    <div class=\"msg-sep\"></div>
+    <hr style=\"border:none;border-top:1px solid #e0e0e0;margin:8px 0;\" />
     """
 
 def parse_uploaded_files(files):
